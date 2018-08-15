@@ -210,5 +210,12 @@ fi
 done
 }
 
-testdir=/dev/shm/xml/K35
-allFiles $testdir
+ls $HOME/Mytest/xml/>/dev/shm/ls.txt
+
+for fider in $(cat /dev/shm/ls.txt)
+do
+	cp -r $HOME/Mytest/xml/$fider /dev/shm/
+	testdir=/dev/shm/$fider
+	allFiles $testdir
+	mv /dev/shm/$fider $HOME/cbeta_python_3.6_ok/xml/
+done
