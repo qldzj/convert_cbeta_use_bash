@@ -15,9 +15,10 @@ yuanwit=#"$(cat $pathfile|grep witness|grep 元|awk -F "\"" '{print($2)}')"
 if echo "$mingwit"|grep -q "wit";then
 	if echo "$yuanwit"|grep -q "wit";then
 #cat $pathfile |grep -n '#beg'|grep -v type=\"cf1\"|grep -v choice|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++' >allbeg.txt
-cat $pathfile |grep -n "<app"|grep '#beg'|grep -v "choice"|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++' >allbeg.txt
+allbeg=$(cat $pathfile |grep -n "<app"|grep '#beg'|grep -v "choice"|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++')
 #排序cat $pathfile |grep -n '#beg'|grep -v type=\"cf1\"|grep -v choice|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}'|sort -u>allbeg.txt
-for beg in $(cat allbeg.txt)
+
+for beg in $allbeg
 	do
 		#先替换ref方便后面获取正文  <g ref="#CB00626">
 		for refline in $(cat $pathfile|grep -n \"\#CB|awk -F':' '{print($1)}')
@@ -70,30 +71,42 @@ for beg in $(cat allbeg.txt)
 			fi
 		else
 			#如果app分行
-				if $(cat $pathfile|grep -n \#${beg}\"|grep "<app"|grep -v "cb:tt"|head -n 1|grep -q "</app");then
-					echo "$pathfile的app $beg只有一行">/dev/null
-				else
-					pathfile_line=$(wc $pathfile|awk '{print($1)}')
-					app_start_line=$(cat $pathfile|grep -n \#${beg}\"|grep -v "cb:tt"|grep -v "choice"|awk -F':' '{print($1)}')
-					tail_tmp=$(echo `expr $pathfile_line - $app_start_line + 1 `)
-					app_end_line=$(cat $pathfile|grep -n "<"|tail -n $tail_tmp|grep "<app"|head -n 1|awk -F":" '{print($1)}')
-					app_cha_line=$(echo `expr $app_end_line - $app_start_line - 1 `)
-					if [ $app_cha_line = "0" ];then
-						seq_app="1"
-					else
-						seq_app=$(seq 1 $app_cha_line)
-					fi
-					#echo "$beg seq_app=$seq_app"
-					for line_app in $seq_app
-					do
-						line_for_end_app=$(echo `expr $line_for_beg_app + 1 `)
-						if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|grep -q "</app");then
-							txtforwit=$(cat $pathfile|head -n $line_for_end_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
-						fi
-						echo "line_for_end_app=$line_for_end_app"
-					done
-					# txtforwit=$(cat $pathfile|tail -n $tail_tmp|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+			beg_in_allbeg_line=$(echo $allbeg|sed 's/\ /\n/g'|grep -n beg|grep $beg|awk -F ":" '{print($1)}')
+			next_beg_in_allbeg_line=$(echo `expr $beg_in_allbeg_line + 1 `)
+			next_beg=$(echo $allbeg|sed 's/\ /\n/g'|head -n $next_beg_in_allbeg_line|tail -n 1)
+			line_for_next_beg_app=$(cat $pathfile|grep -n \#${next_beg}\"|grep "<app"|awk -F':' '{print($1)}')
+			line_for_end_app=$(echo `expr $line_for_next_beg_app - 1 `)
+			if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|grep -q "inline");then
+				txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+			else
+				#txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+				txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
 			fi
+			
+			# if $(cat $pathfile|grep -n \#${beg}\"|grep "<app"|grep -v "cb:tt"|head -n 1|grep -q "</app");then
+			# 	echo "$pathfile的app $beg只有一行">/dev/null
+			# else
+			# 	pathfile_line=$(wc $pathfile|awk '{print($1)}')
+			# 	app_start_line=$(cat $pathfile|grep -n \#${beg}\"|grep -v "cb:tt"|grep -v "choice"|awk -F':' '{print($1)}')
+			# 	tail_tmp=$(echo `expr $pathfile_line - $app_start_line + 1 `)
+			# 	app_end_line=$(cat $pathfile|grep -n "<"|tail -n $tail_tmp|grep "<app"|head -n 1|awk -F":" '{print($1)}')
+			# 	app_cha_line=$(echo `expr $app_end_line - $app_start_line - 1 `)
+			# 	if [ $app_cha_line = "0" ];then
+			# 		seq_app="1"
+			# 	else
+			# 		seq_app=$(seq 1 $app_cha_line)
+			# 	fi
+			# 	#echo "$beg seq_app=$seq_app"
+			# 	for line_app in $seq_app
+			# 	do
+			# 		line_for_end_app=$(echo `expr $line_for_beg_app + 1 `)
+			# 		if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|grep -q "</app");then
+			# 			txtforwit=$(cat $pathfile|head -n $line_for_end_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+			# 		fi
+			# 		echo "line_for_end_app=$line_for_end_app"
+			# 	done
+			# 	# txtforwit=$(cat $pathfile|tail -n $tail_tmp|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+			#fi
 			# line_for_beg_app=$(echo `expr $line_for_beg_app + 1`)
 			# if [ $(cat $pathfile|head -n $line_for_beg_app|tail -n 1|awk -v RS="</app" 'END {print --NR}')  -gt 0 ];then
 			# 	txtforwit=$(cat $pathfile|head -n $line_for_beg_app|tail -n 1|sed 's/<rdg/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
@@ -239,13 +252,13 @@ fi
 done
 }
 
-ls $HOME/Mytest/xml_test/>/dev/shm/ls.txt
+ls $HOME/Mytest/xml/>/dev/shm/ls.txt
 
 for fider in $(cat /dev/shm/ls.txt)
 do
 	rm -rf /dev/shm/$fider
 	rm -rf $HOME/cbeta_python_3.6_ok/xml/$fider
-	cp -r $HOME/Mytest/xml_test/$fider /dev/shm/
+	cp -r $HOME/Mytest/xml/$fider /dev/shm/
 	testdir=/dev/shm/$fider
 	allFiles $testdir
 	mv /dev/shm/$fider $HOME/cbeta_python_3.6_ok/xml/
