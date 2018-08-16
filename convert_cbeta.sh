@@ -8,13 +8,13 @@ else
 #echo $pathfile
 # pathfile=/dev/shm/T10/T10n0279_079.xml
 # beg=beg0106004
-
+#此脚本在debian 9测试
 #songwit=#"$(cat $pathfile|grep witness|grep 宋|awk -F "\"" '{print($2)}')"
 mingwit=#"$(cat $pathfile|grep witness|grep 明|awk -F "\"" '{print($2)}')"
 yuanwit=#"$(cat $pathfile|grep witness|grep 元|awk -F "\"" '{print($2)}')"
 if echo "$mingwit"|grep -q "wit";then
 	if echo "$yuanwit"|grep -q "wit";then
-cat $pathfile |grep -n '#beg'|grep -v type=\"cf1\"|grep -v choice|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++' >allbeg.txt
+cat $pathfile |grep -n "<app"|grep '#beg'|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++' >allbeg.txt
 #排序cat $pathfile |grep -n '#beg'|grep -v type=\"cf1\"|grep -v choice|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}'|sort -u>allbeg.txt
 for beg in $(cat allbeg.txt)
 	do
@@ -31,13 +31,48 @@ for beg in $(cat allbeg.txt)
 						#sed -in s/"g_ref_end"/"<\/g>"/ $pathfile
 				done
 			done
+		#把校勘的app分行修改为一行
+		#sed -i ':label;N;s/\n//;b label'	#sed -i '2,4s/.*/rewqxxasdf/' 
+		#sed -i 'N;913,914s/\n//g;b' T01n0001_003.xml
+		#sed -i "N;`echo $beg_app_line_start`,`echo $beg_app_line_end`s/\n//;b" T01n0001_003.xml 命令成功,测试文件失效
+		if $(cat $pathfile|grep -n \#${beg}\"|grep "<app"|grep -v "cb:tt"|head -n 1|grep -q "</app");then
+			echo "$pathfile的app $beg只有一行">/dev/null
+		else
+			pathfile_line=$(wc $pathfile|awk '{print($1)}')
+			app_start_line=$(cat $pathfile|grep -n \#${beg}\"|grep -v "cb:tt"|grep -v choice|awk -F':' '{print($1)}')
+			app_end_line=$(cat $pathfile|grep -n "<"|tail -n $(echo `expr $pathfile_line - $app_start_line + 1 `)|grep "<app"|awk -F":" '{print($1)}'|head -n 1)
+			app_cha_line=$(echo `expr $app_end_line - $app_start_line - 1 `)
+			if [ $app_cha_line = "0" ];then
+				seq_app=1
+			else
+				seq_app=$(seq 1 $app_cha_line)
+			fi
+			#echo "$beg seq_app=$seq_app"
+			for line_app in $seq_app
+			do
+				pathfile_line=$(wc $pathfile|awk '{print($1)}')
+				app_start_line=$(cat $pathfile|grep -n \#${beg}\"|grep -v "cb:tt"|grep -v choice|awk -F':' '{print($1)}')
+				app_end_line=$(cat $pathfile|grep -n "<"|tail -n $(echo `expr $pathfile_line - $app_start_line + 1 `)|grep "<app"|awk -F":" '{print($1)}'|head -n 1)
+				sed_frond=$(echo `expr $app_start_line - 1 `)
+				sed_back=$(echo `expr $app_start_line + 1 `)
+				sed_b_to_file_end=$(echo `expr $pathfile_line - $app_start_line + 1 `)
+				cat $pathfile|head -n $sed_frond>/dev/shm/tmp.xml
+				cat $pathfile|head -n $app_start_line|tail -n 1|tr "\n" " ">>/dev/shm/tmp.xml
+				cat $pathfile|tail -n $sed_b_to_file_end >>/dev/shm/tmp.xml
+				sed -i 's/>\ </></' /dev/shm/tmp.xml
+				mv -f /dev/shm/tmp.xml $pathfile
+				echo "$pathfile的app $beg有多行,$app_start_line行$sed_back行合并$line_app次"
+			done
+		fi
+		
+
 		yuanwit_tmp=false
 		mingwit_tmp=false
 		beg_to_end=$(echo $beg|sed s/beg/end/)
-		beg_tmp_app=$(cat $pathfile|grep -n \#${beg}\")
+		beg_tmp_app=$(cat $pathfile|grep -n \#${beg}\"|grep "<app"|grep -v "cb:tt"|head -n 1)
 		beg_tmp_txt=$(cat $pathfile|grep -n \"${beg}\")
 		end_tmp_txt=$(cat $pathfile|grep -n \"${beg_to_end}\")
-		line_for_beg_app=$(cat $pathfile|grep -n \#${beg}\"|grep "<app"|awk -F':' '{print($1)}')
+		line_for_beg_app=$(echo $beg_tmp_app|awk -F':' '{print($1)}')
 		#line_for_end_app=$(cat $pathfile|grep -n \#${beg_to_end}\"|awk -F':' '{print($1)}')
 		#获取n值
 		beg_n=$(echo $beg|sed s/beg//)
@@ -62,43 +97,20 @@ for beg in $(cat allbeg.txt)
 
 		#获取wit内容
 		if $(echo $beg_tmp_app|awk -F $beg '{print($2)}'|grep -q "/app");then
-			txtforwit=$(echo $beg_tmp_app|sed 's/<rdg/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+			#txtforwit=$(echo $beg_tmp_app|sed 's/<rdg/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+			txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
 		else
-			#如果app分行
-			line_for_beg_app=$(echo `expr $line_for_beg_app + 1`)
-			if [ $(cat $pathfile|head -n $line_for_beg_app|tail -n 1|awk -v RS="wit=" 'END {print --NR}')  -gt 0 ];then
-				txtforwit=$(cat $pathfile|head -n $line_for_beg_app|tail -n 1|sed 's/<rdg/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
-			else
-				echo "beg_app分了三行及以上，需确认"
-				line_for_beg_app=$(echo `expr $line_for_beg_app + 1`)
-				txtforwit=$(cat $pathfile|head -n $line_for_beg_app|tail -n 1|sed 's/<rdg/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
-			fi
+			#如果还检测到app分行
+			echo "$pathfile的$beg还有分行,需确认"
 		fi
-		# if [ "$txtforwit" = "" ];then
-		# 	txtforwit="EOF"
-		# fi
-		#判断是否有cjk扩展字体
-		# if $(echo $beg_tmp_txt|awk -F $beg '{print($2)}'|awk -F end '{print($1)}'|grep -q ref);then
-		# 	echo $beg第$txtforlinebeg行有cjk扩展字体
-		# 	
-		# 	txtforbeg=$(echo $beg_tmp_txt|awk -F $beg '{print($2)}'|awk -F end '{print($1)}'|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
-		# else 
-		#fi
+
 
 		#获取wit值
-		#wit_numb=$(echo $beg_tmp_app| sed 's/\/lem><rdg/\n/g'|wc|awk '{print($1)}')
-		# if [ $(echo $beg_tmp_app|awk -F $beg '{print($2)}'|awk -v RS="<app" 'END {print --NR}')  -gt 0 ];then
-		# 	echo "$pathfile $beg 校堪存在内app，需手动确认"
-		# else
-			if $(echo $beg_tmp_app|awk -F $beg '{print($2)}'|grep -q "/app");then
-				truewit=$(echo $beg_tmp_app| sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/<rdg/\n/g'|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g' )
-				#truewit=$(echo $beg_tmp_app|sed 's/<lem/\n/g'|awk -F"</lem>" '{print($2)}'|awk -F"wit=" '{print($2)}')
-			else
-				#如果app分行
-				#line_for_beg_app=$(echo `expr $line_for_beg_app + 1`)\
-				truewit=$(cat $pathfile| head -n $line_for_beg_app|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g')
-			fi
-		# fi
+		if $(echo $beg_tmp_app|awk -F $beg '{print($2)}'|grep -q "/app");then
+			truewit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g' )
+
+		fi
+
 		#根据wit值判断大藏经版本
 		yuanwit_tmp=false
 		mingwit_tmp=false
@@ -194,9 +206,9 @@ for beg in $(cat allbeg.txt)
 					fi
 				fi
 			fi
-	done
-	#CB还原
-	#cb_reback_number=$(awk -v RS='#CB' 'END {print --NR}' $pathfile)
+		done
+	CB还原
+	cb_reback_number=$(awk -v RS='#CB' 'END {print --NR}' $pathfile)
 	for cb_reback_number in $(cat $pathfile|grep -n \#CB|sed 's/g_ref_midd/\n/g'|awk -F'g_ref_start' '{print($2)}'|awk '{if($0!="")print}')
 		do
 			#cb_reback_number
@@ -210,11 +222,12 @@ fi
 done
 }
 
-ls $HOME/Mytest/xml/>/dev/shm/ls.txt
+ls $HOME/Mytest/xml_test/>/dev/shm/ls.txt
 
 for fider in $(cat /dev/shm/ls.txt)
 do
-	cp -r $HOME/Mytest/xml/$fider /dev/shm/
+	rm -rf /dev/shm/$fider
+	cp -r $HOME/Mytest/xml_test/$fider /dev/shm/
 	testdir=/dev/shm/$fider
 	allFiles $testdir
 	mv /dev/shm/$fider $HOME/cbeta_python_3.6_ok/xml/
