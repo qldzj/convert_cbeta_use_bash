@@ -1,1 +1,1 @@
-# convert_cbeta_use_bash
+# convert cbeta2016 to 元and明multiversion　use bash．
