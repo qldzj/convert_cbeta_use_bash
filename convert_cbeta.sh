@@ -15,7 +15,7 @@ yuanwit=#"$(cat $pathfile|grep witness|grep 元|awk -F "\"" '{print($2)}')"
 if echo "$mingwit"|grep -q "wit";then
 	if echo "$yuanwit"|grep -q "wit";then
 #cat $pathfile |grep -n '#beg'|grep -v type=\"cf1\"|grep -v choice|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++' >allbeg.txt
-allbeg=$(cat $pathfile |grep -n "<app"|grep '#beg'|grep -v "choice"|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++')
+allbeg=$(cat $pathfile |grep -n "<app"|grep -v "cb:tt"|grep '#beg'|grep -v "choice"|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}' |awk ' !x[$0]++')
 #排序cat $pathfile |grep -n '#beg'|grep -v type=\"cf1\"|grep -v choice|awk -F from '{print($2)}'|awk -F \" '{print($2)}'|awk -F '#' '{print($2)}'|sort -u>allbeg.txt
 
 for beg in $allbeg
@@ -64,10 +64,18 @@ for beg in $allbeg
 		#获取wit内容
 		if $(echo $beg_tmp_app|grep -q "</app");then
 			#txtforwit=$(echo $beg_tmp_app|sed 's/<rdg/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
-			if $(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|grep -q "inline");then
-				txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+			if $(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|grep -q "$yuanwit");then
+				if $(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|grep -q "inline");then
+					txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+				else
+					txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+				fi
 			else
-				txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+				if $(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|grep -q "inline");then
+					txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+				else
+					txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+				fi
 			fi
 		else
 			#如果app分行
@@ -76,13 +84,16 @@ for beg in $allbeg
 			next_beg=$(echo $allbeg|sed 's/\ /\n/g'|head -n $next_beg_in_allbeg_line|tail -n 1)
 			line_for_next_beg_app=$(cat $pathfile|grep -n \#${next_beg}\"|grep "<app"|awk -F':' '{print($1)}')
 			line_for_end_app=$(echo `expr $line_for_next_beg_app - 1 `)
-			if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|grep -q "inline");then
-				txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+			if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|grep -q "$yuanwit");then
+				if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|grep -q "inline");then
+					txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+				else
+					#txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+					txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+				fi
 			else
-				#txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
-				txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+					txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
 			fi
-			
 			# if $(cat $pathfile|grep -n \#${beg}\"|grep "<app"|grep -v "cb:tt"|head -n 1|grep -q "</app");then
 			# 	echo "$pathfile的app $beg只有一行">/dev/null
 			# else
@@ -133,12 +144,19 @@ for beg in $allbeg
 		# 	echo "$pathfile $beg 校堪存在内app，需手动确认"
 		# else
 			if $(echo $beg_tmp_app|grep -q "</app");then
-				truewit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g' )
-				#truewit=$(echo $beg_tmp_app|sed 's/<lem/\n/g'|awk -F"</lem>" '{print($2)}'|awk -F"wit=" '{print($2)}')
+				if $(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|grep -q "$yuanwit");then
+					truewit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g' )
+				else
+					truewit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g' )
+				fi
 			else
 				#如果app分行
 				#line_for_beg_app=$(echo `expr $line_for_beg_app + 1`)\
-				truewit=$(cat $pathfile|head -n $line_for_beg_app|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g')
+				if $(cat $pathfile|head -n $line_for_beg_app|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|grep -q "$yuanwit");then
+					truewit=$(cat $pathfile|head -n $line_for_beg_app|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g')
+				else
+					truewit=$(cat $pathfile|head -n $line_for_beg_app|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F wit= '{print($2)}'|awk -F \" '{print($2)}'|sed 's/ /\n/g')
+				fi
 			fi
 		# fi
 		#根据wit值判断大藏经版本
