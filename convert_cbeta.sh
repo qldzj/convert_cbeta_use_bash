@@ -1,4 +1,5 @@
 #!/bin/bash
+#在debian 9系统中测试
 allFiles() {
 for pathfile in $1/*
 do
