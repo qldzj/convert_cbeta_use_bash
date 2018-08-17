@@ -92,7 +92,13 @@ for beg in $allbeg
 					txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 2|head -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
 				fi
 			else
+				if $(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|grep -q "inline");then
+					txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F '>' '{print($3)}'|awk -F '<' '{print($1)}')
+				else
+					#txtforwit=$(echo $beg_tmp_app|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|head -n 2|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
 					txtforwit=$(cat $pathfile|head -n $line_for_end_app|tail -n 1|sed 's/<\/lem>/\n/g'|tail -n 1|sed 's/resp=\"\#resp1\"/\n/g'|tail -n 1|awk -F '>' '{print($2)}'|awk -F '<' '{print($1)}')
+				fi
+					
 			fi
 			# if $(cat $pathfile|grep -n \#${beg}\"|grep "<app"|grep -v "cb:tt"|head -n 1|grep -q "</app");then
 			# 	echo "$pathfile的app $beg只有一行">/dev/null
